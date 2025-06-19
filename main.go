@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 )
 
 type Product struct {
@@ -12,8 +14,15 @@ type Product struct {
 	Sells int     `json:"product_sells"`
 }
 
+type ProductsJson struct {
+	Products []Product `json:"products"`
+}
+
+const cachePath = "./cache/top_sellers.json"
+
 func main() {
 	products := getTopSellers()
+	saveCache(products)
 	for _, p := range products {
 		fmt.Println(p)
 	}
@@ -21,7 +30,7 @@ func main() {
 
 // simulating db get:
 func getTopSellers() []Product {
-	// time.Sleep(5 * time.Second)
+	// time.Sleep(5 *time.Secon/d)
 	return []Product{
 		{
 			Name:  "mechanical keyboard",
@@ -93,5 +102,23 @@ func getTopSellers() []Product {
 			Code:  "000030",
 			Sells: 45,
 		},
+	}
+}
+
+func saveCache(products []Product) {
+	productsJson := ProductsJson{
+		Products: products,
+	}
+
+	jsonData, err := json.Marshal(productsJson)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = os.WriteFile(cachePath, jsonData, 0644)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 }
