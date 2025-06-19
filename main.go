@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 type Product struct {
@@ -21,8 +22,11 @@ type ProductsJson struct {
 const cachePath = "./cache/top_sellers.json"
 
 func main() {
-	products := getTopSellers()
-	saveCache(products)
+	products := getCachedTopSellers()
+	if products == nil {
+		products = getTopSellers()
+		saveCache(products)
+	}
 	for _, p := range products {
 		fmt.Println(p)
 	}
@@ -105,7 +109,35 @@ func getTopSellers() []Product {
 	}
 }
 
+func getCachedTopSellers() []Product {
+	fmt.Println("getting products in cache")
+	file, err := os.Stat(cachePath)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	if time.Since(file.ModTime()) > 5*time.Minute {
+		return nil
+	}
+
+	productsBytes, err := os.ReadFile(cachePath)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	var cachedProducts ProductsJson
+	if err = json.Unmarshal(productsBytes, &cachedProducts); err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	return cachedProducts.Products
+}
+
 func saveCache(products []Product) {
+	fmt.Println("getting products in database")
 	productsJson := ProductsJson{
 		Products: products,
 	}
