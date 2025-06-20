@@ -30,6 +30,7 @@ const cachePath = "./cache/top_sellers.json"
 const databasePath = "./database.sql"
 
 func main() {
+	start := time.Now()
 	insert := false
 	if len(os.Args) > 1 {
 		insert = os.Args[1] == "insert"
@@ -41,6 +42,7 @@ func main() {
 		products = getTopSellers()
 		saveCache(products)
 	}
+	fmt.Printf("time elapsed: %vs\n", time.Since(start).Seconds())
 	for _, p := range products {
 		fmt.Println(p)
 	}
@@ -50,13 +52,13 @@ func connectDb(insert bool) {
 	fmt.Println("trying to connect db...")
 	database, err := sql.Open("sqlite3", databasePath)
 	if err != nil {
-		log.Fatalf("erro conectando: %v", err)
+		log.Fatalf("error: %v", err)
 	}
 
 	db = database
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("erro ping: %v", err)
+		log.Fatalf("error: %v", err)
 	}
 
 	createTable := `
@@ -71,17 +73,21 @@ func connectDb(insert bool) {
 
 	_, err = db.Exec(createTable)
 	if err != nil {
-		log.Fatalf("erro criando tabela: %v", err)
+		log.Fatalf("error: %v", err)
 	}
 
 	if !insert {
 		return
 	}
 
+	populateDatabase()
+}
+
+func populateDatabase() {
 	insertProduct := func(name string, price float32, code string, stock, sells int) {
 		_, err := db.Exec("INSERT INTO products(name, price, code, stock, sells) VALUES(?, ?, ?, ?, ?)", name, price, code, stock, sells)
 		if err != nil {
-			log.Printf("Error: %v", err)
+			log.Printf("error: %v", err)
 			return
 		}
 		fmt.Println("Produto criado.")
@@ -141,7 +147,7 @@ func saveCache(products []Product) {
 func getTopSellers() []Product {
 	rows, err := db.Query("SELECT * FROM products ORDER BY sells LIMIT 10;")
 	if err != nil {
-		log.Fatalf("erro: %v", err)
+		log.Fatalf("error: %v", err)
 	}
 
 	var products []Product
@@ -149,14 +155,14 @@ func getTopSellers() []Product {
 		var p Product
 		err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Code, &p.Sells, &p.Sells)
 		if err != nil {
-			log.Fatalf("erro: %v", err)
+			log.Fatalf("error: %v", err)
 		}
 
 		products = append(products, p)
 	}
 
 	if err = rows.Err(); err != nil {
-		log.Fatalf("erro: %v", err)
+		log.Fatalf("error: %v", err)
 	}
 
 	return products
