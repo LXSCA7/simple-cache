@@ -1,6 +1,6 @@
 package main
 
-func GetTopSellers() []Product {
+func CreateProducts() []Product {
 	// time.Sleep(5 *time.Second)
 	return []Product{
 		{

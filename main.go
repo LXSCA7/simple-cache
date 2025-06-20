@@ -33,12 +33,11 @@ func main() {
 	if len(os.Args) > 1 {
 		insert = os.Args[1] == "insert"
 	}
-	fmt.Println(os.Args[0])
 	connectDb(insert)
 	defer db.Close()
 	products := getCachedTopSellers()
 	if products == nil {
-		products = getTopSellers()
+		products = CreateProducts()
 		saveCache(products)
 	}
 	for _, p := range products {
@@ -86,7 +85,7 @@ func connectDb(insert bool) {
 		fmt.Println("Produto criado.")
 	}
 
-	for _, p := range GetTopSellers() {
+	for _, p := range CreateProducts() {
 		insertProduct(p.Name, p.Price, p.Code, p.Sells)
 	}
 }
