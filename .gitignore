@@ -24,7 +24,7 @@ go.work.sum
 # env file
 .env
 database.sql
-# cache/top_sellers.json
+cache/top_sellers.json
 
 # Editor/IDE
 # .idea/
