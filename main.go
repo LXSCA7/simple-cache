@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Product struct {
@@ -19,9 +23,19 @@ type ProductsJson struct {
 	Products []Product `json:"products"`
 }
 
+var db *sql.DB
+
 const cachePath = "./cache/top_sellers.json"
+const databasePath = "./database.sql"
 
 func main() {
+	insert := false
+	if len(os.Args) > 1 {
+		insert = os.Args[1] == "insert"
+	}
+	fmt.Println(os.Args[0])
+	connectDb(insert)
+	defer db.Close()
 	products := getCachedTopSellers()
 	if products == nil {
 		products = getTopSellers()
@@ -29,6 +43,51 @@ func main() {
 	}
 	for _, p := range products {
 		fmt.Println(p)
+	}
+}
+
+func connectDb(insert bool) {
+	fmt.Println("trying to connect db...")
+	database, err := sql.Open("sqlite3", databasePath)
+	if err != nil {
+		log.Fatalf("erro conectando: %v", err)
+	}
+
+	db = database
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("erro ping: %v", err)
+	}
+
+	createTable := `
+		CREATE TABLE IF NOT EXISTS products (
+			id 	INTEGER PRIMARY KEY AUTOINCREMENT,
+			name 	TEXT NOT NULL,
+			price REAL NOT NULL,
+			code  TEXT UNIQUE NOT NULL,
+			sells INTEGER NOT NULL
+		);`
+
+	_, err = db.Exec(createTable)
+	if err != nil {
+		log.Fatalf("erro criando tabela: %v", err)
+	}
+
+	if !insert {
+		return
+	}
+
+	insertProduct := func(name string, price float32, code string, sells int) {
+		_, err := db.Exec("INSERT INTO products(name, price, code, sells) VALUES(?, ?, ?, ?)", name, price, code, sells)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			return
+		}
+		fmt.Println("Produto criado.")
+	}
+
+	for _, p := range getTopSellers() {
+		insertProduct(p.Name, p.Price, p.Code, p.Sells)
 	}
 }
 
