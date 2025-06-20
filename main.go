@@ -12,6 +12,7 @@ import (
 )
 
 type Product struct {
+	ID    int     `json:"product_id"`
 	Name  string  `json:"product_name"`
 	Price float32 `json:"product_price"`
 	Stock int     `json:"product_stock"`
@@ -37,7 +38,7 @@ func main() {
 	defer db.Close()
 	products := getCachedTopSellers()
 	if products == nil {
-		products = CreateProducts()
+		products = getTopSellers()
 		saveCache(products)
 	}
 	for _, p := range products {
@@ -64,6 +65,7 @@ func connectDb(insert bool) {
 			name 	TEXT NOT NULL,
 			price REAL NOT NULL,
 			code  TEXT UNIQUE NOT NULL,
+			stock INTEGER NOT NULL,
 			sells INTEGER NOT NULL
 		);`
 
@@ -76,8 +78,8 @@ func connectDb(insert bool) {
 		return
 	}
 
-	insertProduct := func(name string, price float32, code string, sells int) {
-		_, err := db.Exec("INSERT INTO products(name, price, code, sells) VALUES(?, ?, ?, ?)", name, price, code, sells)
+	insertProduct := func(name string, price float32, code string, stock, sells int) {
+		_, err := db.Exec("INSERT INTO products(name, price, code, stock, sells) VALUES(?, ?, ?, ?, ?)", name, price, code, stock, sells)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			return
@@ -86,7 +88,7 @@ func connectDb(insert bool) {
 	}
 
 	for _, p := range CreateProducts() {
-		insertProduct(p.Name, p.Price, p.Code, p.Sells)
+		insertProduct(p.Name, p.Price, p.Code, p.Stock, p.Sells)
 	}
 }
 
@@ -134,4 +136,28 @@ func saveCache(products []Product) {
 		fmt.Println(err)
 		return
 	}
+}
+
+func getTopSellers() []Product {
+	rows, err := db.Query("SELECT * FROM products ORDER BY sells LIMIT 10;")
+	if err != nil {
+		log.Fatalf("erro: %v", err)
+	}
+
+	var products []Product
+	for rows.Next() {
+		var p Product
+		err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Code, &p.Sells, &p.Sells)
+		if err != nil {
+			log.Fatalf("erro: %v", err)
+		}
+
+		products = append(products, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatalf("erro: %v", err)
+	}
+
+	return products
 }
