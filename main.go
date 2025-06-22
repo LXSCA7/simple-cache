@@ -145,7 +145,7 @@ func saveCache(products []Product) {
 }
 
 func getTopSellers() []Product {
-	rows, err := db.Query("SELECT * FROM products ORDER BY sells LIMIT 10;")
+	rows, err := db.Query("SELECT * FROM products ORDER BY sells DESC LIMIT 10;")
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
@@ -153,11 +153,10 @@ func getTopSellers() []Product {
 	var products []Product
 	for rows.Next() {
 		var p Product
-		err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Code, &p.Sells, &p.Sells)
+		err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Code, &p.Stock, &p.Sells)
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
-
 		products = append(products, p)
 	}
 
